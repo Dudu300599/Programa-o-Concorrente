@@ -27,7 +27,6 @@ void* incrementa(void* args){
         argumentos->vetor[i] += 1;
     }
     
-    free(args);
     return NULL;
 }
 
