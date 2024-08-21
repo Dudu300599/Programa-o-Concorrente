@@ -61,10 +61,6 @@ int main(int argc, char* argv[]){
 
     for (int i=0; i<m; i++){
         Args* argumentos = (Args*)malloc(sizeof(Args));
-        if (argumentos == NULL) {
-            perror("Failed to allocate memory for thread arguments");
-            exit(EXIT_FAILURE);
-        }
 
         int fim = inicio + elementosThread;
         if (i < resto){
