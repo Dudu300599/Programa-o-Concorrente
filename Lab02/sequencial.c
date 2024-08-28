@@ -25,8 +25,7 @@ int main(int argc, char *argv[]) {
     return 2;
   }
 
-  // Preenche os vetores com valores float aleatórios e calcula o produto
-  // interno
+  // Preenche os vetores com valores float aleatórios e calcula o produto interno
   srand(time(NULL));
   for (long int i = 0; i < n; i++) {
     vetor_a[i] = (float)(rand() % MAX) / 3.0f;
