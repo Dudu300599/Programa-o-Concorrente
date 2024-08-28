@@ -16,11 +16,7 @@ void *ProdutoInterno(void *tid) {
 
   bloco = n / nthreads; // Tamanho do bloco de dados de cada thread
   ini = id * bloco;     // Posição inicial do vetor
-  fim =
-      (id == nthreads - 1)
-          ? n
-          : ini +
-                bloco; // Posição final do vetor (tratando elementos restantes)
+  fim = (id == nthreads - 1) ? n : ini + bloco; // Posição final do vetor (tratando elementos restantes)
 
   // Aloca espaço para o resultado local
   produto_local = (double *)malloc(sizeof(double));
