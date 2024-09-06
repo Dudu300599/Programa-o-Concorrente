@@ -134,7 +134,7 @@ int main(int argc, char *argv[]) {
   multiplicar_matrizes_concorrente(A, B, C, N, M, P, num_threads);
   GET_TIME(finish);
   elapsed = finish - start;
-  printf("Tempo de multiplicação concorrente: %lf segundos\n", elapsed);
+  printf("Tempo de processamento: %lf segundos\n", elapsed);
 
   // Salvar a matriz resultante
   GET_TIME(start);
