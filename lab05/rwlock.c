@@ -1,72 +1,108 @@
-#include <iostream>
-#include <thread>
-#include <mutex>
-#include <condition_variable>
+//Programa concorrente que cria e faz operacoes sobre uma lista de inteiros
 
-std::mutex rw_mutex;           // Mutex principal para controlar o acesso
-std::condition_variable cond_var;  // Variável de condição para sincronização
-int readers = 0;               // Contador de leitores
-bool writer_waiting = false;   // Indicador se um escritor está esperando
-bool writer_active = false;    // Indicador se um escritor está escrevendo
+#include <stdio.h>
+#include <stdlib.h>
+#include "list_int.h"
+#include <pthread.h>
+#include "timer.h"
 
-void start_reading() {
-    std::unique_lock<std::mutex> lock(rw_mutex);
-    cond_var.wait(lock, [] { return !writer_active && !writer_waiting; });
-    readers++;
-    std::cout << "Leitor começou a ler.\n";
+#define QTDE_OPS 10000000 //quantidade de operacoes sobre a lista (insercao, remocao, consulta)
+#define QTDE_INI 100 //quantidade de insercoes iniciais na lista
+#define MAX_VALUE 100 //valor maximo a ser inserido
+
+//lista compartilhada iniciada 
+struct list_node_s* head_p = NULL; 
+//qtde de threads no programa
+int nthreads;
+
+//rwlock de exclusao mutua
+pthread_rwlock_t rwlock;
+
+//tarefa das threads
+void* tarefa(void* arg) {
+   long int id = (long int) arg;
+   int op;
+   int in, out, read; 
+   in=out=read = 0; 
+
+   //realiza operacoes de consulta (98%), insercao (1%) e remocao (1%)
+   for(long int i=id; i<QTDE_OPS; i+=nthreads) {
+      op = rand() % 100;
+      if(op<98) {
+	 pthread_rwlock_rdlock(&rwlock); /* lock de LEITURA */    
+         Member(i%MAX_VALUE, head_p);   /* Ignore return value */
+	 pthread_rwlock_unlock(&rwlock);     
+	 read++;
+      } else if(98<=op && op<99) {
+	 pthread_rwlock_wrlock(&rwlock); /* lock de ESCRITA */    
+         Insert(i%MAX_VALUE, &head_p);  /* Ignore return value */
+	 pthread_rwlock_unlock(&rwlock);     
+	 in++;
+      } else if(op>=99) {
+	 pthread_rwlock_wrlock(&rwlock); /* lock de ESCRITA */     
+         Delete(i%MAX_VALUE, &head_p);  /* Ignore return value */
+	 pthread_rwlock_unlock(&rwlock);     
+	 out++;
+      }
+   }
+   //registra a qtde de operacoes realizadas por tipo
+   printf("Thread %ld: in=%d out=%d read=%d\n", id, in, out, read);
+   pthread_exit(NULL);
 }
 
-void stop_reading() {
-    std::unique_lock<std::mutex> lock(rw_mutex);
-    readers--;
-    if (readers == 0) {
-        cond_var.notify_all();
-    }
-    std::cout << "Leitor terminou de ler.\n";
-}
+/*-----------------------------------------------------------------*/
+int main(int argc, char* argv[]) {
+   pthread_t *tid;
+   double ini, fim, delta;
+   
+   //verifica se o numero de threads foi passado na linha de comando
+   if(argc<2) {
+      printf("Digite: %s <numero de threads>\n", argv[0]); return 1;
+   }
+   nthreads = atoi(argv[1]);
 
-void start_writing() {
-    std::unique_lock<std::mutex> lock(rw_mutex);
-    writer_waiting = true;
-    cond_var.wait(lock, [] { return readers == 0 && !writer_active; });
-    writer_waiting = false;
-    writer_active = true;
-    std::cout << "Escritor começou a escrever.\n";
-}
+   //insere os primeiros elementos na lista
+   for(int i=0; i<QTDE_INI; i++)
+      Insert(i%MAX_VALUE, &head_p);  /* Ignore return value */
+   
 
-void stop_writing() {
-    std::unique_lock<std::mutex> lock(rw_mutex);
-    writer_active = false;
-    cond_var.notify_all();
-    std::cout << "Escritor terminou de escrever.\n";
-}
+   //aloca espaco de memoria para o vetor de identificadores de threads no sistema
+   tid = malloc(sizeof(pthread_t)*nthreads);
+   if(tid==NULL) {  
+      printf("--ERRO: malloc()\n"); return 2;
+   }
 
-// Funções para threads de leitura e escrita
-void reader() {
-    start_reading();
-    // Simula a leitura
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    stop_reading();
-}
+   //tomada de tempo inicial
+   GET_TIME(ini);
+   //inicializa a variavel mutex
+   pthread_rwlock_init(&rwlock, NULL);
+   
+   //cria as threads
+   for(long int i=0; i<nthreads; i++) {
+      if(pthread_create(tid+i, NULL, tarefa, (void*) i)) {
+         printf("--ERRO: pthread_create()\n"); return 3;
+      }
+   }
+   
+   //aguarda as threads terminarem
+   for(int i=0; i<nthreads; i++) {
+      if(pthread_join(*(tid+i), NULL)) {
+         printf("--ERRO: pthread_join()\n"); return 4;
+      }
+   }
 
-void writer() {
-    start_writing();
-    // Simula a escrita
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
-    stop_writing();
-}
+   //tomada de tempo final
+   GET_TIME(fim);
+   delta = fim-ini;
+   printf("Tempo: %lf\n", delta);
 
-int main() {
-    // Exemplo de uso com várias threads leitoras e escritoras
-    std::thread r1(reader), r2(reader), r3(reader);
-    std::thread w1(writer), w2(writer);
+   //libera o mutex
+   pthread_rwlock_destroy(&rwlock);
+   //libera o espaco de memoria do vetor de threads
+   free(tid);
+   //libera o espaco de memoria da lista
+   Free_list(&head_p);
 
-    r1.join();
-    r2.join();
-    r3.join();
-    w1.join();
-    w2.join();
-
-    return 0;
-}
+   return 0;
+}  /* main */
 
