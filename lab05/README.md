@@ -9,18 +9,6 @@ O código consiste em:
 - Condições de espera para leitores e escritores.
 - Variáveis que contabilizam leitores e escritores ativos, além de escritores que desejam escrever e leitores que estão esperando.
 
-## Como Funciona
-
-1. **Leitores**:
-   - Um leitor incrementa o contador de leitores ativos e imprime uma mensagem de log ao entrar.
-   - Se houver escritores ativos ou esperando, o leitor aguardará até que os escritores possam acessar o recurso. Esta abordagem garante que a prioridade de escrita seja respeitada.
-   - Ao sair, o contador de leitores ativos é decrementado e, se não houver mais leitores, um escritor aguardando é sinalizado para que ele possa prosseguir.
-
-2. **Escritores**:
-   - Um escritor incrementa um contador de "quer escritores" ao tentar entrar.
-   - Se houver leitores ativos ou outros escritores ativos, o escritor aguarda até que esses escritores possam concluir suas operações.
-   - Quando um escritor obtém acesso, ele incrementa o contador de escritores ativos e imprime uma mensagem de log. Ao sair, decrementa o contador e sinaliza os próximos escritores ou leitores.
-
 ## Análise de Prioridade de Escrita
 
 Durante a execução do programa, observamos a seguinte dinâmica:
@@ -30,20 +18,18 @@ Durante a execução do programa, observamos a seguinte dinâmica:
     ```
     Novo leitor!
     -------
-    Leitores: 1
-    Escritores: 0
+    Leitores ativos: 1
+    Escritores ativos: 0
     Escritores em espera: 0
-    Leitores em espera: 0
     -------
     ```
   - Quando um escritor está aguardando, a saída inclui:
     ```
     Escritor em espera!
     -------
-    Leitores: 1
-    Escritores: 0
+    Leitores ativos: 1
+    Escritores ativos: 0
     Escritores em espera: 1
-    Leitores em espera: 0
     -------
     ```
 - **Comportamento Observado**: Ao executar o programa, foi observado que novos leitores não puderam iniciar suas operações enquanto um escritor estava em espera, confirmando que a prioridade de escrita está sendo respeitada. A contagem de `esperaLeitores` também evidencia quantos leitores estão aguardando, ilustrando a situação atual do acesso ao recurso compartilhado.
