@@ -1,125 +1,187 @@
+#include "list_int.h"
+#include "timer.h"
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "list_int.h"
-#include <pthread.h>
-#include "timer.h"
 
-#define QTDE_OPS 10000000 //quantidade de operacoes sobre a lista (insercao, remocao, consulta)
-#define QTDE_INI 100 //quantidade de insercoes iniciais na lista
-#define MAX_VALUE 100 //valor maximo a ser inserido
+#define QTDE_OPS                                                               \
+  10000 // quantidade de operacoes sobre a lista (insercao, remocao, consulta)
+#define QTDE_INI 100  // quantidade de insercoes iniciais na lista
+#define MAX_VALUE 100 // valor maximo a ser inserido
 
 // lista compartilhada iniciada
-struct list_node_s* head_p = NULL;
+struct list_node_s *head_p = NULL;
 
 // quantidade de threads no programa
 int nthreads;
 
 // variáveis para controle de prioridade de escrita
-pthread_rwlock_t rwlock;  // lock para controle de acesso
-int esc_espera = 0;  // contagem de escritores esperando
+pthread_mutex_t mutex;    // mutex para controle de acesso
+pthread_cond_t cond_leit; // condição para leitores
+pthread_cond_t cond_escr; // condição para escritores
+int leit = 0;             // contagem de leitores ativos
+int escr = 0;             // contagem de escritores ativos
+int querEscrever = 0;     // contagem de escritores que querem escrever
 
-// tarefa das threads
-void* tarefa(void* arg) {
-   long int id = (long int) arg;
-   int op;
-   int in, out, read;
-   in = out = read = 0;
-
-   // realiza operações de consulta (98%), inserção (1%) e remoção (1%)
-   for(long int i = id; i < QTDE_OPS; i += nthreads) {
-      op = rand() % 100;
-      if (op < 98) {  // operação de leitura
-         // verifica se há escritores esperando
-         if (esc_espera > 0) {
-            printf("Thread %ld: leitura bloqueada devido a escritores esperando.\n", id);
-            continue;  // se houver escritores, pula a operação de leitura para garantir prioridade
-         }
-         pthread_rwlock_rdlock(&rwlock);  // lock de leitura
-         printf("Thread %ld: realizando leitura.\n", id);
-         Member(i % MAX_VALUE, head_p);   // ignora valor de retorno
-         pthread_rwlock_unlock(&rwlock);
-         read++;
-      } else if (op >= 98 && op < 99) {  // operação de inserção (escrita)
-         __sync_add_and_fetch(&esc_espera, 1);  // incrementa o contador de escritores esperando
-         printf("Thread %ld: solicitando lock para inserção.\n", id);
-         pthread_rwlock_wrlock(&rwlock);  // lock de escrita
-         printf("Thread %ld: realizando inserção.\n", id);
-         Insert(i % MAX_VALUE, &head_p);  // ignora valor de retorno
-         pthread_rwlock_unlock(&rwlock);
-         __sync_sub_and_fetch(&esc_espera, 1);  // decrementa o contador de escritores esperando
-         in++;
-      } else if (op >= 99) {  // operação de remoção (escrita)
-         __sync_add_and_fetch(&esc_espera, 1);  // incrementa o contador de escritores esperando
-         printf("Thread %ld: solicitando lock para remoção.\n", id);
-         pthread_rwlock_wrlock(&rwlock);  // lock de escrita
-         printf("Thread %ld: realizando remoção.\n", id);
-         Delete(i % MAX_VALUE, &head_p);  // ignora valor de retorno
-         pthread_rwlock_unlock(&rwlock);
-         __sync_sub_and_fetch(&esc_espera, 1);  // decrementa o contador de escritores esperando
-         out++;
-      }
-   }
-
-   // registra a quantidade de operações realizadas por tipo
-   printf("Thread %ld: in=%d out=%d read=%d\n", id, in, out, read);
-   pthread_exit(NULL);
+// função para entrada de leitura
+void EntraLeitura() {
+  pthread_mutex_lock(&mutex);
+  while (escr > 0 ||
+         querEscrever > 0) { // espera se houver escritores ativos ou esperando
+    printf("Leitor em espera!\n");
+    pthread_cond_wait(&cond_leit, &mutex);
+  }
+  leit++;
+  printf("Novo leitor!\n-------\nLeitores:%d\nEscritores:%d\nEscritores em "
+         "espera:%d\n-------\n",
+         leit, escr, querEscrever);
+  pthread_mutex_unlock(&mutex);
 }
 
-int main(int argc, char* argv[]) {
-   pthread_t *tid;
-   double ini, fim, delta;
+// função para saída de leitura
+void SaiLeitura() {
+  pthread_mutex_lock(&mutex);
+  leit--;
+  printf("Finalizacao leitor!\n-------\nLeitores:%d\nEscritores:%d\nEscritores "
+         "em espera:%d\n-------\n",
+         leit, escr, querEscrever);
+  if (leit == 0) {
+    pthread_cond_signal(
+        &cond_escr); // notifica escritores se não houver leitores ativos
+  }
+  pthread_mutex_unlock(&mutex);
+}
 
-   // verifica se o número de threads foi passado na linha de comando
-   if (argc < 2) {
-      printf("Digite: %s <numero de threads>\n", argv[0]);
-      return 1;
-   }
-   nthreads = atoi(argv[1]);
+// função para entrada de escrita
+void EntraEscrita() {
+  pthread_mutex_lock(&mutex);
+  querEscrever++;
+  while (leit > 0 ||
+         escr > 0) { // espera enquanto há leitores ou escritores ativos
+    printf(
+        "Escritor em espera!\n-------\nLeitores:%d\nEscritores:%d\nEscritores "
+        "em espera:%d\n-------\n",
+        leit, escr, querEscrever);
+    pthread_cond_wait(&cond_escr, &mutex);
+  }
+  escr++;
+  querEscrever--;
+  printf("Novo escritor!\n-------\nLeitores:%d\nEscritores:%d\nEscritores em "
+         "espera:%d\n-------\n",
+         leit, escr, querEscrever);
+  pthread_mutex_unlock(&mutex);
+}
 
-   // insere os primeiros elementos na lista
-   for (int i = 0; i < QTDE_INI; i++) {
-      Insert(i % MAX_VALUE, &head_p);  // ignora valor de retorno
-   }
+// função para saída de escrita
+void SaiEscrita() {
+  pthread_mutex_lock(&mutex);
+  escr--;
+  printf(
+      "Finalizacao escritor!\n-------\nLeitores:%d\nEscritores:%d\nEscritores "
+      "em espera:%d\n-------\n",
+      leit, escr, querEscrever);
+  if (querEscrever > 0) {
+    pthread_cond_signal(&cond_escr); // sinaliza o próximo escritor na fila
+  } else {
+    pthread_cond_broadcast(
+        &cond_leit); // sinaliza leitores se não houver mais escritores
+  }
+  pthread_mutex_unlock(&mutex);
+}
 
-   // aloca espaço de memória para o vetor de identificadores de threads no sistema
-   tid = malloc(sizeof(pthread_t) * nthreads);
-   if (tid == NULL) {
-      printf("--ERRO: malloc()\n");
-      return 2;
-   }
+// tarefa das threads
+void *tarefa(void *arg) {
+  long int id = (long int)arg;
+  int op, in = 0, out = 0, read = 0;
 
-   // tomada de tempo inicial
-   GET_TIME(ini);
-   // inicializa a variável mutex
-   pthread_rwlock_init(&rwlock, NULL);
+  for (long int i = id; i < QTDE_OPS; i += nthreads) {
+    op = rand() % 100;
+    if (op < 60) { // operação de leitura
+      EntraLeitura();
+      Member(i % MAX_VALUE, head_p); // ignora valor de retorno
+      SaiLeitura();
+      read++;
+    } else if (op >= 60 && op < 90) { // operação de inserção (escrita)
+      EntraEscrita();
+      Insert(i % MAX_VALUE, &head_p); // ignora valor de retorno
+      SaiEscrita();
+      in++;
+    } else if (op >= 90) { // operação de remoção (escrita)
+      EntraEscrita();
+      Delete(i % MAX_VALUE, &head_p); // ignora valor de retorno
+      SaiEscrita();
+      out++;
+    }
+  }
 
-   // cria as threads
-   for (long int i = 0; i < nthreads; i++) {
-      if (pthread_create(tid + i, NULL, tarefa, (void*) i)) {
-         printf("--ERRO: pthread_create()\n");
-         return 3;
-      }
-   }
+  // registra a quantidade de operações realizadas por tipo
+  printf("Thread %ld: in=%d out=%d read=%d\n", id, in, out, read);
+  pthread_exit(NULL);
+}
 
-   // aguarda as threads terminarem
-   for (int i = 0; i < nthreads; i++) {
-      if (pthread_join(*(tid + i), NULL)) {
-         printf("--ERRO: pthread_join()\n");
-         return 4;
-      }
-   }
+int main(int argc, char *argv[]) {
+  pthread_t *tid;
+  double ini, fim, delta;
 
-   // tomada de tempo final
-   GET_TIME(fim);
-   delta = fim - ini;
-   printf("Tempo: %lf\n", delta);
+  // verifica se o número de threads foi passado na linha de comando
+  if (argc < 2) {
+    printf("Digite: %s <numero de threads>\n", argv[0]);
+    return 1;
+  }
+  nthreads = atoi(argv[1]);
 
-   // libera o mutex
-   pthread_rwlock_destroy(&rwlock);
-   // libera o espaço de memória do vetor de threads
-   free(tid);
-   // libera o espaço de memória da lista
-   Free_list(&head_p);
+  // insere os primeiros elementos na lista
+  for (int i = 0; i < QTDE_INI; i++) {
+    Insert(i % MAX_VALUE, &head_p); // ignora valor de retorno
+  }
 
-   return 0;
+  // aloca espaço de memória para o vetor de identificadores de threads no
+  // sistema
+  tid = malloc(sizeof(pthread_t) * nthreads);
+  if (tid == NULL) {
+    printf("--ERRO: malloc()\n");
+    return 2;
+  }
+
+  // inicializa mutex e variáveis condicionais
+  pthread_mutex_init(&mutex, NULL);
+  pthread_cond_init(&cond_escr, NULL);
+  pthread_cond_init(&cond_leit, NULL);
+
+  // tomada de tempo inicial
+  GET_TIME(ini);
+
+  // cria as threads
+  for (long int i = 0; i < nthreads; i++) {
+    if (pthread_create(tid + i, NULL, tarefa, (void *)i)) {
+      printf("--ERRO: pthread_create()\n");
+      return 3;
+    }
+  }
+
+  // aguarda as threads terminarem
+  for (int i = 0; i < nthreads; i++) {
+    if (pthread_join(*(tid + i), NULL)) {
+      printf("--ERRO: pthread_join()\n");
+      return 4;
+    }
+  }
+
+  // tomada de tempo final
+  GET_TIME(fim);
+  delta = fim - ini;
+  printf("Tempo: %lf\n", delta);
+
+  // libera recursos
+  pthread_mutex_destroy(&mutex);
+  pthread_cond_destroy(&cond_escr);
+  pthread_cond_destroy(&cond_leit);
+
+  // libera o espaço de memória do vetor de threads
+  free(tid);
+
+  // libera o espaço de memória da lista
+  Free_list(&head_p);
+
+  return 0;
 }
