@@ -4,8 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define QTDE_OPS                                                               \
-  100 // quantidade de operacoes sobre a lista (insercao, remocao, consulta)
+#define QTDE_OPS 10000 // quantidade de operacoes sobre a lista (insercao, remocao, consulta)
 #define QTDE_INI 100  // quantidade de insercoes iniciais na lista
 #define MAX_VALUE 100 // valor maximo a ser inserido
 
