@@ -2,9 +2,7 @@
 
 ## Introdução
 
-Este projeto implementa o padrão leitores/escritores com prioridade para operações de escrita, onde as operações de leitura não podem iniciar enquanto uma operação de escrita estiver em andamento ou enquanto houver escritores esperando. Essa abordagem visa evitar a fome de escritores, garantindo que eles tenham acesso garantido ao recurso compartilhado.
-
-## Estrutura do Código
+Este projeto implementa o padrão leitores/escritores com prioridade para operações de escrita, onde as operações de leitura não podem iniciar enquanto uma operação de escrita estiver em andamento ou enquanto houver escritores esperando.
 
 O código consiste em:
 - Um mutex para controle de acesso ao recurso compartilhado.
