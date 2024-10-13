@@ -4,7 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define QTDE_OPS 1000 // quantidade de operacoes sobre a lista (insercao, remocao, consulta)
+#define QTDE_OPS                                                               \
+  100 // quantidade de operacoes sobre a lista (insercao, remocao, consulta)
 #define QTDE_INI 100  // quantidade de insercoes iniciais na lista
 #define MAX_VALUE 100 // valor maximo a ser inserido
 
@@ -31,7 +32,8 @@ void EntraLeitura() {
     pthread_cond_wait(&cond_leit, &mutex);
   }
   leit++;
-  printf("Leitor começou a ler!\n-------\nLeitores ativos:%d\nEscritores ativos:%d\nEscritores em "
+  printf("Leitor começou a ler!\n-------\nLeitores ativos:%d\nEscritores "
+         "ativos:%d\nEscritores em "
          "espera:%d\n-------\n",
          leit, escr, querEscrever);
   pthread_mutex_unlock(&mutex);
@@ -41,7 +43,8 @@ void EntraLeitura() {
 void SaiLeitura() {
   pthread_mutex_lock(&mutex);
   leit--;
-  printf("Leitor finalizou!\n-------\nLeitores ativos:%d\nEscritores ativos:%d\nEscritores "
+  printf("Leitor finalizou!\n-------\nLeitores ativos:%d\nEscritores "
+         "ativos:%d\nEscritores "
          "em espera:%d\n-------\n",
          leit, escr, querEscrever);
   if (leit == 0) {
@@ -54,18 +57,20 @@ void SaiLeitura() {
 // função para entrada de escrita
 void EntraEscrita() {
   pthread_mutex_lock(&mutex);
+  printf("Novo Escritor\n");
   querEscrever++;
   while (leit > 0 ||
          escr > 0) { // espera enquanto há leitores ou escritores ativos
-    printf(
-        "Escritor em espera!\n-------\nLeitores ativos:%d\nEscritores ativos:%d\nEscritores "
-        "em espera:%d\n-------\n",
-        leit, escr, querEscrever);
+    printf("Escritor em espera!\n-------\nLeitores ativos:%d\nEscritores "
+           "ativos:%d\nEscritores "
+           "em espera:%d\n-------\n",
+           leit, escr, querEscrever);
     pthread_cond_wait(&cond_escr, &mutex);
   }
   escr++;
   querEscrever--;
-  printf("Escritor começou a escrever!\n-------\nLeitores ativos:%d\nEscritores ativos:%d\nEscritores em "
+  printf("Escritor começou a escrever!\n-------\nLeitores "
+         "ativos:%d\nEscritores ativos:%d\nEscritores em "
          "espera:%d\n-------\n",
          leit, escr, querEscrever);
   pthread_mutex_unlock(&mutex);
@@ -75,10 +80,10 @@ void EntraEscrita() {
 void SaiEscrita() {
   pthread_mutex_lock(&mutex);
   escr--;
-  printf(
-      "Escritor finalizou!\n-------\nLeitores ativos:%d\nEscritores ativos:%d\nEscritores "
-      "em espera:%d\n-------\n",
-      leit, escr, querEscrever);
+  printf("Escritor finalizou!\n-------\nLeitores ativos:%d\nEscritores "
+         "ativos:%d\nEscritores "
+         "em espera:%d\n-------\n",
+         leit, escr, querEscrever);
   if (querEscrever > 0) {
     pthread_cond_signal(&cond_escr); // sinaliza o próximo escritor na fila
   } else {
