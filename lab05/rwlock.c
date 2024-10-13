@@ -4,7 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define QTDE_OPS 10000 // quantidade de operacoes sobre a lista (insercao, remocao, consulta)
+#define QTDE_OPS                                                               \
+  1000 // quantidade de operacoes sobre a lista (insercao, remocao, consulta)
 #define QTDE_INI 100  // quantidade de insercoes iniciais na lista
 #define MAX_VALUE 100 // valor maximo a ser inserido
 
@@ -31,7 +32,7 @@ void EntraLeitura() {
     pthread_cond_wait(&cond_leit, &mutex);
   }
   leit++;
-  printf("Novo leitor!\n-------\nLeitores:%d\nEscritores:%d\nEscritores em "
+  printf("Leitor começou a ler!\n-------\nLeitores ativos:%d\nEscritores ativos:%d\nEscritores em "
          "espera:%d\n-------\n",
          leit, escr, querEscrever);
   pthread_mutex_unlock(&mutex);
@@ -41,7 +42,7 @@ void EntraLeitura() {
 void SaiLeitura() {
   pthread_mutex_lock(&mutex);
   leit--;
-  printf("Finalizacao leitor!\n-------\nLeitores:%d\nEscritores:%d\nEscritores "
+  printf("Leitor finalizou!\n-------\nLeitores ativos:%d\nEscritores ativos:%d\nEscritores "
          "em espera:%d\n-------\n",
          leit, escr, querEscrever);
   if (leit == 0) {
@@ -58,14 +59,14 @@ void EntraEscrita() {
   while (leit > 0 ||
          escr > 0) { // espera enquanto há leitores ou escritores ativos
     printf(
-        "Escritor em espera!\n-------\nLeitores:%d\nEscritores:%d\nEscritores "
+        "Escritor em espera!\n-------\nLeitores ativos:%d\nEscritores ativos:%d\nEscritores "
         "em espera:%d\n-------\n",
         leit, escr, querEscrever);
     pthread_cond_wait(&cond_escr, &mutex);
   }
   escr++;
   querEscrever--;
-  printf("Novo escritor!\n-------\nLeitores:%d\nEscritores:%d\nEscritores em "
+  printf("Escritor começou a escrever!\n-------\nLeitores ativos:%d\nEscritores ativos:%d\nEscritores em "
          "espera:%d\n-------\n",
          leit, escr, querEscrever);
   pthread_mutex_unlock(&mutex);
@@ -76,7 +77,7 @@ void SaiEscrita() {
   pthread_mutex_lock(&mutex);
   escr--;
   printf(
-      "Finalizacao escritor!\n-------\nLeitores:%d\nEscritores:%d\nEscritores "
+      "Escritor finalizou!\n-------\nLeitores ativos:%d\nEscritores ativos:%d\nEscritores "
       "em espera:%d\n-------\n",
       leit, escr, querEscrever);
   if (querEscrever > 0) {
