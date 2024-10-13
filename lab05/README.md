@@ -84,7 +84,6 @@ Durante a execução do programa, observamos a seguinte dinâmica:
     ```
 
 - **Comportamento Observado**: Ao executar o programa, foi observado que novos leitores não puderam iniciar suas operações enquanto um escritor estava em espera ou ativo, confirmando que a prioridade de escrita está sendo respeitada.
-## Conclusão
 
 
 ## Execução do Programa
