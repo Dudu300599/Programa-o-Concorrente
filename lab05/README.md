@@ -12,7 +12,7 @@ O código consiste em:
 ## Análise de Prioridade de Escrita
 
 Durante a execução do programa, observamos a seguinte dinâmica:
-Exemplo 01:
+-Exemplo 01:
     ```
     Novo Escritor
     Escritor em espera!
@@ -49,7 +49,7 @@ Exemplo 01:
     Escritores em espera: 2
     -------
     ```
-Exemplo 02
+-Exemplo 02
     ```
     -------
     Leitores ativos: 0
