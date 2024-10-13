@@ -12,27 +12,81 @@ O código consiste em:
 ## Análise de Prioridade de Escrita
 
 Durante a execução do programa, observamos a seguinte dinâmica:
-
-- **Mensagens de Log**: A implementação inclui mensagens de log detalhadas que indicam quando leitores estão esperando e quando escritores são ativados. Por exemplo:
-  - Ao entrar, um leitor imprime:
     ```
-    Novo leitor!
-    -------
-    Leitores ativos: 1
-    Escritores ativos: 0
-    Escritores em espera: 0
-    -------
-    ```
-  - Quando um escritor está aguardando, a saída inclui:
-    ```
+    Novo Escritor
     Escritor em espera!
     -------
-    Leitores ativos: 1
-    Escritores ativos: 0
+    Leitores ativos: 0
+    Escritores ativos: 1
     Escritores em espera: 1
     -------
+    Novo Escritor
+    Escritor em espera!
+    -------
+    Leitores ativos: 0
+    Escritores ativos: 1
+    Escritores em espera: 2
+    -------
+    Novo Escritor
+    Escritor em espera!
+    -------
+    Leitores ativos: 0
+    Escritores ativos: 1
+    Escritores em espera: 3
+    -------
+    Escritor finalizou!
+    -------
+    Leitores ativos: 0
+    Escritores ativos: 0
+    Escritores em espera: 3
+    -------
+    Leitor em espera!
+    Escritor começou a escrever
+    -------
+    Leitores ativos: 0
+    Escritores ativos: 1
+    Escritores em espera: 2
+    -------
     ```
-- **Comportamento Observado**: Ao executar o programa, foi observado que novos leitores não puderam iniciar suas operações enquanto um escritor estava em espera, confirmando que a prioridade de escrita está sendo respeitada.
+    
+    ```
+    Novo Escritor
+    Escritor em espera!
+    -------
+    Leitores ativos: 0
+    Escritores ativos: 1
+    Escritores em espera: 1
+    -------
+    Novo Escritor
+    Escritor em espera!
+    -------
+    Leitores ativos: 0
+    Escritores ativos: 1
+    Escritores em espera: 2
+    -------
+    Novo Escritor
+    Escritor em espera!
+    -------
+    Leitores ativos: 0
+    Escritores ativos: 1
+    Escritores em espera: 3
+    -------
+    Escritor finalizou!
+    -------
+    Leitores ativos: 0
+    Escritores ativos: 0
+    Escritores em espera: 3
+    -------
+    Leitor em espera!
+    Escritor começou a escrever
+    -------
+    Leitores ativos: 0
+    Escritores ativos: 1
+    Escritores em espera: 2
+    -------
+    ```
+
+- **Comportamento Observado**: Ao executar o programa, foi observado que novos leitores não puderam iniciar suas operações enquanto um escritor estava em espera ou ativo, confirmando que a prioridade de escrita está sendo respeitada.
 ## Conclusão
 
 
