@@ -7,7 +7,7 @@ Este projeto implementa o padrão leitores/escritores com prioridade para opera�
 O código consiste em:
 - Um mutex para controle de acesso ao recurso compartilhado.
 - Condições de espera para leitores e escritores.
-- Variáveis que contabilizam leitores e escritores ativos, além de escritores que desejam escrever e leitores que estão esperando.
+- Variáveis que contabilizam leitores e escritores ativos, além de escritores que estão esperando.
 
 ## Análise de Prioridade de Escrita
 
