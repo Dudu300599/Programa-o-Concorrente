@@ -60,17 +60,15 @@ void *thread2(void *arg) {
      while (input_index < buffer1_size) {
                 int current_block_size = (block_count <= 10) ? (2 * block_count + 1) : 10;
 
-                // Copiar caracteres do buffer1 para buffer2
-                for (; char_count < current_block_size && input_index < buffer1_size; char_count++) {
+                for (; char_count < current_block_size && input_index < buffer1_size; char_count++) {  // Copiar caracteres do buffer1 para buffer2
                     if (output_index < BUFFER_SIZE - 1) { // Evita estouro de buffer
                         buffer2[output_index++] = buffer1[input_index++];  // Copia os caracteres para Buffer2
                     } else {
                         break; // Para se o buffer2 estiver cheio
                     }
                 }
-
-                // Adiciona '\n' após o bloco
-                if (char_count == current_block_size) {
+    
+                if (char_count == current_block_size) { // Adiciona '\n' após o bloco
                     if (output_index < BUFFER_SIZE - 1) {
                         buffer2[output_index++] = '\n';  // Adiciona '\n' após o bloco
                     }
