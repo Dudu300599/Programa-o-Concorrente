@@ -42,9 +42,8 @@ void *thread2(void *arg) {
     int input_index, output_index; // Contadores para os buffers
     int buffer1_size; // Tamanho da linha lida do buffer 1
     int block_count = 0; // Contador para o tamanho do bloco
-    int current_block_size; // Tamanho do bloco a ser copiado
     int char_count; // Contador de caracteres copiados
-    
+
     while (1) {
         sem_wait(&buffer1_pronto); // Espera o Buffer 1 estar pronto
         sem_wait(&buffer2_vazio); // Espera o Buffer 2 estar vazio 
@@ -56,35 +55,36 @@ void *thread2(void *arg) {
             break; // finaliza
         }
 
-        input_index = 0, output_index= 0, char_count = 0;
+        input_index = 0, output_index= 0, char_count = 0, block_count = 0;
 
-        while (input_index < buffer1_size) {
-            if (block_count <= 10) {
-                    current_block_size = 2 * block_count + 1;
+     while (input_index < buffer1_size) {
+                int current_block_size = (block_count <= 10) ? (2 * block_count + 1) : 10;
+
+                // Copiar caracteres do buffer1 para buffer2
                 for (; char_count < current_block_size && input_index < buffer1_size; char_count++) {
-                    buffer2[output_index++] = buffer1[input_index++];  // Copia os caracteres para Buffer2
+                    if (output_index < BUFFER_SIZE - 1) { // Evita estouro de buffer
+                        buffer2[output_index++] = buffer1[input_index++];  // Copia os caracteres para Buffer2
+                    } else {
+                        break; // Para se o buffer2 estiver cheio
+                    }
                 }
+
+                // Adiciona '\n' após o bloco
                 if (char_count == current_block_size) {
-                    buffer2[output_index++] = '\n';  // Adiciona '\n' após o bloco
+                    if (output_index < BUFFER_SIZE - 1) {
+                        buffer2[output_index++] = '\n';  // Adiciona '\n' após o bloco
+                    }
                     char_count = 0;
-                    block_count++;  // Incrementa o valor de n até 11
-                }
-            } else {
-                for (; char_count < 10 && input_index < buffer1_size; char_count++) { // Para n >= 10, insere a cada 10 caracteres
-                    buffer2[output_index++] = buffer1[input_index++];  // Copia os caracteres para Buffer2
-                }
-                if (char_count == 10) {
-                    char_count = 0;
-                    buffer2[output_index++] = '\n';
+                    block_count++;  // Incrementa o valor do bloco
                 }
             }
+
+            buffer2[output_index] = '\0'; // Adiciona o terminador de string
+            sem_post(&buffer1_vazio); // Sinaliza que o Buffer 1 está vazio (para a Thread 1)
+            sem_post(&buffer2_pronto); // Sinaliza que o Buffer 2 está cheio (para a Thread 3)
         }
-        buffer2[output_index++] = '\0'; // Adiciona o terminador de string
-        sem_post(&buffer1_vazio); // Sinaliza que o Buffer 1 está vazio (para a Thread 1)
-        sem_post(&buffer2_pronto); // Sinaliza que o Buffer 2 está cheio (para a Thread 3)
+        pthread_exit(NULL);
     }
-    pthread_exit(NULL);
-}
 
 void *thread3(void *arg) {
     while (1) {
@@ -101,7 +101,7 @@ void *thread3(void *arg) {
 
 int main() {
     pthread_t thread_leitura, thread_processamento, thread_impressao;
-    
+
     // Inicializa semáforos
     sem_init(&buffer1_vazio, 0, 1); // Um espaço vazio no buffer1
     sem_init(&buffer1_pronto, 0, 0); // Nenhum dado pronto no buffer1
