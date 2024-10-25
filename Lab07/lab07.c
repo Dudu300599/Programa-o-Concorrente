@@ -35,7 +35,6 @@ void *thread1(void *arg) {
         }
         sem_post(&buffer1_pronto); // Indica que buffer1 está pronto
     }
-
     fclose(file);
     pthread_exit(NULL);
 }
@@ -75,8 +74,7 @@ void *thread2(void *arg) {
                     block_count++;  // Incrementa o valor de n até 11
                 }
             } else {
-                // Para n >= 10, insere a cada 10 caracteres
-                for (; char_count < 10 && input_index < buffer1_size; char_count++) {
+                for (; char_count < 10 && input_index < buffer1_size; char_count++) { // Para n >= 10, insere a cada 10 caracteres
                     buffer2[output_index++] = buffer1[input_index++];  // Copia os caracteres para Buffer2
                 }
                 if (char_count == 10) {
@@ -86,35 +84,28 @@ void *thread2(void *arg) {
             }
         }
         buffer2[output_index++] = '\0'; // Adiciona o terminador de string
-
         sem_post(&buffer1_vazio); // Sinaliza que o Buffer 1 está vazio (para a Thread 1)
         sem_post(&buffer2_pronto); // Sinaliza que o Buffer 2 está cheio (para a Thread 3)
     }
-
     pthread_exit(NULL);
 }
 
 void *thread3(void *arg) {
-
     while (1) {
         sem_wait(&buffer2_pronto); // Aguarda dados em buffer2
-
-        // Verifica se o buffer2 contém o delimitador
-        if (buffer2[0] == '$') { 
+        if (buffer2[0] == '$') {  // Verifica se o buffer2 contém o delimitador
             break;    // Termina o loop; 
         } else {
             printf("%s", buffer2); // Imprime os dados de buffer2
         }
-
         sem_post(&buffer2_vazio); // Libera espaço no buffer2
     }
-
     pthread_exit(NULL);
 }
 
 int main() {
     pthread_t thread_leitura, thread_processamento, thread_impressao;
-
+    
     // Inicializa semáforos
     sem_init(&buffer1_vazio, 0, 1); // Um espaço vazio no buffer1
     sem_init(&buffer1_pronto, 0, 0); // Nenhum dado pronto no buffer1
