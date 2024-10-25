@@ -24,7 +24,6 @@ void *thread1(void *arg) {
         perror("Erro ao abrir o arquivo");
         pthread_exit(NULL);
     }
-
     while (1) {
         sem_wait(&buffer1_vazio); // Aguarda espaço no buffer1
         aux = fgets(buffer1, N - 1, file); 
@@ -45,8 +44,7 @@ void *thread2(void *arg) {
     int block_count = 0; // Contador para o tamanho do bloco
     int current_block_size; // Tamanho do bloco a ser copiado
     int char_count; // Contador de caracteres copiados
-
-
+    
     while (1) {
         sem_wait(&buffer1_pronto); // Espera o Buffer 1 estar pronto
         sem_wait(&buffer2_vazio); // Espera o Buffer 2 estar vazio 
@@ -58,9 +56,7 @@ void *thread2(void *arg) {
             break; // finaliza
         }
 
-        input_index = 0;
-        output_index= 0;
-        char_count = 0;
+        input_index = 0, output_index= 0, char_count = 0;
 
         while (input_index < buffer1_size) {
             if (block_count <= 10) {
